@@ -1,6 +1,6 @@
 "use client"
 
-import { useId, useLayoutEffect, useRef, useSyncExternalStore } from "react"
+import { useEffect, useId, useLayoutEffect, useRef, useSyncExternalStore } from "react"
 
 /** Where the engine of the page and the dictation of an input stand. */
 export type SpeechToTextStatus =
@@ -11,7 +11,6 @@ export type SpeechToTextStatus =
   | "downloading"
   | "loading"
   | "ready"
-  | "error"
   | "busy"
   | "recording"
   | "finishing"
@@ -71,6 +70,7 @@ let frozenText = ""
 let frozenAt = 0
 let pass = 0
 let passStarted = 0
+let passSeconds = 0
 let timer: ReturnType<typeof setTimeout> | undefined
 
 const join = (...parts: string[]) => parts.filter(Boolean).join(" ")
@@ -90,22 +90,18 @@ function transcribe() {
   pass += 1
   passStarted = Date.now()
   const audio = audioSinceFrozen()
+  passSeconds = audio.length / RATE
   worker?.postMessage({ type: "transcribe", id: pass, audio }, [audio.buffer])
 }
 
-// Freezes the words that ended well before the end of a long window, cut between two words.
+// Freezes what ended well before the end of a long window: the words, cut before the first
+// that reaches into the last seconds, or the pause or silence up to those seconds.
 function freeze(words: Word[], seconds: number) {
   if (seconds <= WINDOW_S) return
   const kept = words.findIndex((word) => word.end > seconds - LIVE_TAIL_S)
-  if (kept < 1) return
-  frozenText = join(
-    frozenText,
-    words
-      .slice(0, kept)
-      .map((word) => word.text)
-      .join(" ")
-  )
-  frozenAt += Math.round(words[kept].start * RATE)
+  const frozen = kept === -1 ? words : words.slice(0, kept)
+  frozenText = join(frozenText, frozen.map((word) => word.text).join(" "))
+  frozenAt += Math.round((kept === -1 ? seconds - LIVE_TAIL_S : words[kept].start) * RATE)
 }
 
 function heard(data: { id: number; text: string; words: Word[] }) {
@@ -118,7 +114,7 @@ function heard(data: { id: number; text: string; words: Word[] }) {
     return
   }
   update({ dictation: { ...dictation, liveText: text } })
-  freeze(data.words, (samples - frozenAt) / RATE)
+  freeze(data.words, passSeconds)
   timer = setTimeout(transcribe, Math.max(0, PASS_MS - (Date.now() - passStarted)))
 }
 
@@ -161,11 +157,15 @@ async function begin(owner: string, callback: (text: string) => void) {
   }
 }
 
-// Ends the dictation: the microphone goes, and every pass still under way is ignored.
-function end() {
+function releaseMic() {
   clearTimeout(timer)
   closeMic?.()
   closeMic = undefined
+}
+
+// Ends the dictation: the microphone goes, and every pass still under way is ignored.
+function end() {
+  releaseMic()
   pass += 1
   update({ dictation: undefined })
 }
@@ -182,10 +182,16 @@ function received({ data }: MessageEvent) {
   } else if (data.type === "error") {
     pending = undefined
     if (shared.dictation) end()
-    update({ engine: "error", error: data.message })
+    // Back to where it stood, so the reader can try again.
+    update({ engine: FALLBACK[shared.engine] ?? shared.engine, error: data.message })
   } else {
     heard(data)
   }
+}
+
+const FALLBACK: Partial<Record<EngineStatus, EngineStatus>> = {
+  downloading: "not-downloaded",
+  loading: "downloaded",
 }
 
 function subscribe(listener: () => void) {
@@ -214,9 +220,9 @@ function start(owner: string, callback: (text: string) => void) {
 function stop(owner: string) {
   const dictation = shared.dictation
   if (dictation?.owner !== owner || dictation.phase !== "recording") return
-  clearTimeout(timer)
-  closeMic?.()
-  closeMic = undefined
+  // Nothing was recorded while the browser still asked for the microphone.
+  if (!closeMic) return end()
+  releaseMic()
   update({ dictation: { ...dictation, phase: "finishing" } })
   transcribe()
 }
@@ -237,36 +243,48 @@ export type UseSpeechToTextOptions = {
   onFinal: (text: string) => void
 }
 
+export type UseSpeechToTextResult = {
+  /** Where the engine and this input's dictation stand. */
+  status: SpeechToTextStatus
+  /** How much of the model download is done, from 0 to 1. */
+  progress: number
+  /** The provisional text of this input's dictation. */
+  liveText: string
+  /** What went wrong last, if anything. */
+  error?: string
+  /** Starts the one-time model download, once the user confirmed it. */
+  download: () => void
+  /** Starts a dictation, loading the downloaded model first if needed. */
+  start: () => void
+  /** Stops recording; the final text follows. */
+  stop: () => void
+  /** Drops the dictation without any text. */
+  cancel: () => void
+}
+
 /**
  * Dictation with a speech recognition model that runs in the browser. Every input on the page
  * shares one engine, and only one of them dictates at a time.
  */
-export function useSpeechToText({ onFinal }: UseSpeechToTextOptions) {
+export function useSpeechToText({ onFinal }: UseSpeechToTextOptions): UseSpeechToTextResult {
   const owner = useId()
   // The final text goes to the callback of the latest render, not of the one that started.
   const final = useRef(onFinal)
   useLayoutEffect(() => {
     final.current = onFinal
   })
+  // An input that goes away takes its dictation along, and the microphone with it.
+  useEffect(() => () => cancel(owner), [owner])
   const state = useSyncExternalStore(subscribe, snapshot, snapshot)
-  const mine = state.dictation?.owner === owner
 
   return {
-    /** Where the engine and this input's dictation stand. */
     status: statusOf(state, owner),
-    /** How much of the model download is done, from 0 to 1. */
     progress: state.progress,
-    /** The provisional text of this input's dictation. */
-    liveText: mine ? state.dictation!.liveText : "",
-    /** What went wrong last, if anything. */
+    liveText: state.dictation?.owner === owner ? state.dictation.liveText : "",
     error: state.error,
-    /** Starts the one-time model download, once the user confirmed it. */
     download: load,
-    /** Starts a dictation, loading the downloaded model first if needed. */
     start: () => void start(owner, (text) => final.current(text)),
-    /** Stops recording; the final text follows. */
     stop: () => stop(owner),
-    /** Drops the dictation without any text. */
     cancel: () => cancel(owner),
   }
 }

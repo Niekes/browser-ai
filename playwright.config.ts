@@ -14,6 +14,8 @@ export default defineConfig({
           args: [
             "--use-fake-ui-for-media-stream",
             "--use-fake-device-for-media-stream",
+            // A fake audio output keeps the audio clock running without a sound device.
+            "--disable-audio-output",
             `--use-file-for-fake-audio-capture=${fileURLToPath(new URL("e2e/hello.wav", import.meta.url))}`,
           ],
         },

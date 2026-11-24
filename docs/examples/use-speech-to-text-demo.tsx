@@ -1,5 +1,6 @@
 import { useState } from "react"
 
+import { Button } from "@/components/ui/button"
 import { useSpeechToText } from "@/hooks/use-speech-to-text"
 
 export default function UseSpeechToTextDemo() {
@@ -10,12 +11,13 @@ export default function UseSpeechToTextDemo() {
     <div className="flex flex-col gap-3 text-sm">
       <div className="flex items-center gap-2">
         {speech.status === "not-downloaded" && (
-          <button className="rounded-md border px-3 py-1.5" onClick={speech.download}>
+          <Button variant="outline" size="sm" onClick={speech.download}>
             Download the model (~1.3 GB)
-          </button>
+          </Button>
         )}
-        <button
-          className="rounded-md border px-3 py-1.5 disabled:opacity-50"
+        <Button
+          variant="outline"
+          size="sm"
           disabled={
             speech.status !== "ready" &&
             speech.status !== "downloaded" &&
@@ -24,7 +26,7 @@ export default function UseSpeechToTextDemo() {
           onClick={speech.status === "recording" ? speech.stop : speech.start}
         >
           {speech.status === "recording" ? "Stop" : "Record a note"}
-        </button>
+        </Button>
         <span className="text-muted-foreground">
           {speech.status}
           {speech.status === "downloading" && ` ${Math.round(speech.progress * 100)}%`}

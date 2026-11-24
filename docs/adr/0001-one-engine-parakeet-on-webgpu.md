@@ -10,7 +10,8 @@ without cross-origin isolation.
 Decision: Parakeet is the one engine of v1, behind no abstraction. The model
 comes from `ysdede/parakeet-tdt-0.6b-v3-onnx` on Hugging Face, pinned to one
 revision; nothing is self-hosted. The worker asks parakeet.js for the
-`webgpu-hybrid` backend: in parakeet.js 1.4.4 `webgpu` names no execution
+`webgpu-hybrid` backend, with the 18 MB decoder in int8, which runs on WASM
+in every WebGPU mode of parakeet.js: in parakeet.js 1.4.4 `webgpu` names no execution
 provider, so the 1.2 GB encoder lands on WASM and runs out of memory, and
 `webgpu-strict` starts the WASM runtime twice at once and fails.
 

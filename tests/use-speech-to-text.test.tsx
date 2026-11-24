@@ -112,13 +112,6 @@ describe("useSpeechToText", () => {
     act(() => FakeNode.last.speak(30))
     act(() => FakeNode.last.speak(40))
     act(() => vi.advanceTimersByTime(1000))
-    // Words that all still lie in the last seconds, or none past them: nothing to freeze yet.
-    const late = [{ text: "Late", start: 65, end: 66 }]
-    worker.reply({ type: "text", id: worker.sent.at(-1)!.id, text: "Late", words: late })
-    act(() => vi.advanceTimersByTime(1000))
-    const early = [{ text: "Early", start: 1, end: 2 }]
-    worker.reply({ type: "text", id: worker.sent.at(-1)!.id, text: "Early", words: early })
-    act(() => vi.advanceTimersByTime(1000))
     expect((worker.sent.at(-1)!.audio as Float32Array).length).toBe(16000 * 70)
     const words = [
       { text: "Early", start: 1, end: 2 },
@@ -142,6 +135,39 @@ describe("useSpeechToText", () => {
     vi.useRealTimers()
   })
 
+  it("measures the last seconds against the audio a pass heard", async () => {
+    vi.useFakeTimers()
+    const { result, worker } = await ready()
+    act(() => FakeNode.last.speak(70))
+    act(() => vi.advanceTimersByTime(1000))
+    act(() => FakeNode.last.speak(5))
+    const words = [
+      { text: "Early", start: 1, end: 2 },
+      { text: "late.", start: 63, end: 64 },
+    ]
+    worker.reply({ type: "text", id: worker.sent.at(-1)!.id, text: "Early late.", words })
+    act(() => result.current.stop())
+    expect((worker.sent.at(-1)!.audio as Float32Array).length).toBe(16000 * 12)
+    vi.useRealTimers()
+  })
+
+  it.each([
+    ["a pause", [{ text: "Early.", start: 1, end: 2 }], "Early."],
+    ["silence", [], ""],
+  ])("freezes %s past a minute too", async (_, words, frozen) => {
+    vi.useFakeTimers()
+    const { result, worker, onFinal } = await ready()
+    act(() => FakeNode.last.speak(70))
+    act(() => vi.advanceTimersByTime(1000))
+    worker.reply({ type: "text", id: worker.sent.at(-1)!.id, text: frozen, words })
+    act(() => result.current.stop())
+    const last = worker.sent.at(-1)!
+    expect((last.audio as Float32Array).length).toBe(16000 * 10)
+    worker.reply({ type: "text", id: last.id, text: "Then more.", words: [] })
+    expect(onFinal).toHaveBeenCalledWith(frozen ? "Early. Then more." : "Then more.")
+    vi.useRealTimers()
+  })
+
   it("reports a microphone it may not use", async () => {
     vi.stubGlobal("navigator", {
       mediaDevices: { getUserMedia: async () => Promise.reject(new Error("denied")) },
@@ -159,14 +185,14 @@ describe("useSpeechToText", () => {
     FakeWorker.last.reply({ type: "probe", supported: true, cached: false })
     act(() => result.current.download())
     FakeWorker.last.reply({ type: "error", message: "No GPU memory." })
-    expect(result.current).toMatchObject({ status: "error", error: "No GPU memory." })
+    expect(result.current).toMatchObject({ status: "not-downloaded", error: "No GPU memory." })
   })
 
   it("ends a dictation whose transcription failed", async () => {
     const { result, worker } = await ready()
     act(() => result.current.stop())
     worker.reply({ type: "error", message: "Device lost." })
-    expect(result.current).toMatchObject({ status: "error", error: "Device lost.", liveText: "" })
+    expect(result.current).toMatchObject({ status: "ready", error: "Device lost.", liveText: "" })
     expect(track.stop).toHaveBeenCalled()
   })
 
@@ -198,5 +224,35 @@ describe("useSpeechToText", () => {
     act(() => result.current.cancel())
     await act(async () => result.current.start())
     expect(result.current.status).toBe("recording")
+  })
+
+  it("lets go of the microphone when the dictating input goes away", async () => {
+    const { unmount } = await ready()
+    const other = renderHook(() => useOther())
+    expect(other.result.current.status).toBe("busy")
+    unmount()
+    expect(track.stop).toHaveBeenCalled()
+    expect(other.result.current.status).toBe("ready")
+  })
+
+  it("drops a dictation stopped before the microphone opened", async () => {
+    let grant!: (stream: unknown) => void
+    const stream = new Promise((resolve) => (grant = resolve))
+    vi.stubGlobal("navigator", { mediaDevices: { getUserMedia: () => stream } })
+    const { result, worker, onFinal } = await ready()
+    act(() => result.current.stop())
+    await act(async () => grant({ getTracks: () => [track] }))
+    expect(worker.sent.map((m) => m.type)).not.toContain("transcribe")
+    expect(onFinal).not.toHaveBeenCalled()
+    expect(result.current.status).toBe("ready")
+  })
+
+  it("lets the reader try again after a failed download", async () => {
+    const { useSpeechToText } = await load()
+    const { result } = renderHook(() => useSpeechToText({ onFinal: () => {} }))
+    FakeWorker.last.reply({ type: "probe", supported: true, cached: false })
+    act(() => result.current.download())
+    FakeWorker.last.reply({ type: "error", message: "Network error." })
+    expect(result.current).toMatchObject({ status: "not-downloaded", error: "Network error." })
   })
 })

@@ -58,9 +58,8 @@ const speech = useSpeechToText({ onFinal: (text) => append(text) })
 | `busy`           | Another input dictates.                                            |
 | `recording`      | This hook dictates; `liveText` shows what was said so far.         |
 | `finishing`      | The last pass runs; `onFinal` receives the final text.             |
-| `error`          | The engine failed; `error` says why.                               |
 
-`error` also names a microphone the browser refused, while the status stays where it was.
+`error` names what went wrong last - a download that broke off, a microphone the browser refused - while the status goes back to where the reader can try again.
 
 ## API Reference
 

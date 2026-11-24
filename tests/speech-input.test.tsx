@@ -143,6 +143,16 @@ describe("SpeechInput", () => {
     expect(changes).not.toHaveBeenCalled()
   })
 
+  it("cancels with Escape while the model still loads", async () => {
+    const { worker, field } = await mount("Hello")
+    worker.reply({ type: "probe", supported: true, cached: true })
+    fireEvent.click(mic())
+    fireEvent.keyDown(field, { key: "Escape" })
+    worker.reply({ type: "ready" })
+    await act(async () => {})
+    expect(mic().getAttribute("aria-label")).toBe("Start dictation")
+  })
+
   it("says why it cannot dictate in this browser", async () => {
     const { worker } = await mount()
     worker.reply({ type: "probe", supported: false, cached: false })

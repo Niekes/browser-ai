@@ -156,7 +156,12 @@ export function SpeechInput({ value, onChange, className, ...props }: SpeechInpu
     <div
       data-slot="speech-input"
       className="flex flex-col gap-2"
-      onKeyDown={(event) => event.key === "Escape" && dictating && speech.cancel()}
+      onKeyDown={(event) => {
+        if (event.key !== "Escape" || !(dictating || status === "loading")) return
+        // Escape belongs to the dictation here, not to a dialog around the input.
+        event.stopPropagation()
+        speech.cancel()
+      }}
     >
       <div className="relative">
         <Textarea
