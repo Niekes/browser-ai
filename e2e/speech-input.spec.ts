@@ -28,8 +28,8 @@ test("dictates into the demo from the microphone", async ({ page }) => {
   await page.goto("docs/components/speech-input")
   const field = page.getByRole("tabpanel").getByLabel("Message")
   const mic = page.getByRole("button", { name: "Start dictation" })
-  // Enabled once the page has hydrated and the engine has been probed.
-  await expect(mic).toBeEnabled()
+  // Enabled once the page has hydrated and the engine has been probed; a cold dev server is slow.
+  await expect(mic).toBeEnabled({ timeout: 60_000 })
   await field.fill("Note:")
 
   await mic.click()
