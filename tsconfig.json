@@ -1,0 +1,33 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "strict": true,
+    // As the Vite template of React checks the code a project copies from the registry.
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "types": ["node", "vite/client"],
+    "paths": {
+      "@/components/ui/speech-input": ["./registry/new-york/ui/speech-input.tsx"],
+      "@/hooks/use-speech-to-text": ["./registry/new-york/hooks/use-speech-to-text.ts"],
+      "@/*": ["./*"]
+    },
+    "rootDirs": [".", "./.react-router/types"],
+    "verbatimModuleSyntax": true
+  },
+  "include": [
+    "registry",
+    "components",
+    "lib",
+    "docs",
+    "tests",
+    "e2e",
+    "*.ts",
+    ".react-router/types/**/*"
+  ]
+}

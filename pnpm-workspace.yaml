@@ -1,0 +1,14 @@
+# Vite+ ships its own Vite and Vitest: every package gets those.
+overrides:
+  vite: "npm:@voidzero-dev/vite-plus-core@1.4.0"
+  vitest: "5.0.5"
+
+allowBuilds:
+  # The binary of the bundler behind React Router and fumadocs.
+  esbuild: true
+  # onnxruntime-web pulls protobufjs in; its postinstall only checks versions.
+  protobufjs: false
+
+permissions:
+  fallow:
+    skills: false

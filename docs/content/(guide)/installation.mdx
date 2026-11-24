@@ -1,0 +1,46 @@
+---
+title: Installation
+description: Add a component to a shadcn/ui project.
+---
+
+## Requirements
+
+A project set up with shadcn/ui: React 19 and Tailwind CSS 4, with a `components.json`. If you start from scratch, run `npx shadcn@latest init` first. The bundler has to understand `new Worker(new URL("./file", import.meta.url))`, as Vite, Next.js and webpack 5 do.
+
+## Add a component
+
+Every component is an item of the registry in the GitHub repository. Install one with the shadcn CLI:
+
+```package-install
+npx shadcn@latest add niekes/browser-ai/speech-input
+```
+
+The CLI copies `speech-input.tsx` into your `components/ui` folder, `use-speech-to-text.ts` and its worker into `hooks`, adds shadcn's `button`, `progress` and `textarea` if they are missing, and installs `parakeet.js`.
+
+Pin a release with a tag:
+
+```package-install
+npx shadcn@latest add niekes/browser-ai/speech-input#v<version>
+```
+
+## A namespace instead
+
+The registry is also served as JSON from this site. Add it to the `registries` of your `components.json`:
+
+```json title="components.json"
+{
+  "registries": {
+    "@browser-ai": "https://niekes.github.io/browser-ai/r/{name}.json"
+  }
+}
+```
+
+Then the items install by their short name:
+
+```package-install
+npx shadcn@latest add @browser-ai/speech-input
+```
+
+## Browsers
+
+The models run on WebGPU with 16-bit floats: Chrome and Edge on the desktop. Elsewhere the components say so and stay usable as plain inputs. The page needs no special headers: no cross-origin isolation, so it runs on GitHub Pages, Vercel or any static host as it is.

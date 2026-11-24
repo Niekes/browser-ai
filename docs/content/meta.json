@@ -1,0 +1,5 @@
+{
+  "title": "browser-ai",
+  "description": "Local AI components for shadcn/ui: the model runs in the browser.",
+  "pages": ["(guide)", "components"]
+}

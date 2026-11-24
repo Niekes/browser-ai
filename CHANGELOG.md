@@ -1,0 +1,19 @@
+# Changelog
+
+All notable changes to this project are documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+### Added
+
+- `speech-input`, `SpeechInput`: a textarea that takes dictation. The mic
+  button records, the live text shows at the cursor while the reader speaks,
+  and the final text lands there on stop; Escape cancels. Controlled by
+  `value` and `onChange`, so it works with react-hook-form.
+- `use-speech-to-text`, `useSpeechToText`: the hook behind it - the
+  microphone, a Web Worker and Parakeet TDT 0.6B v3 on WebGPU, one engine
+  per page and one dictation at a time. The model downloads once the reader
+  confirms it.

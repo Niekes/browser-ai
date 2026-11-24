@@ -1,0 +1,4 @@
+scripts:
+  setup: |
+    pnpm install --frozen-lockfile
+setupAgentStartupPolicy: wait-for-setup

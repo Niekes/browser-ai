@@ -1,0 +1,23 @@
+---
+title: Introduction
+description: Local AI components for shadcn/ui. The model runs in the browser.
+---
+
+import SpeechInputDemo from "@/docs/examples/speech-input-demo"
+
+<SpeechInputDemo />
+
+browser-ai is a set of copy-paste components for [shadcn/ui](https://ui.shadcn.com) that run their AI model in the browser. You install them with the shadcn CLI, the code lands in your project, and you own it from then on.
+
+- **Local.** The model runs on the GPU of the reader's machine, through WebGPU. No audio and no text leaves the browser, and there is no server to pay for.
+- **Asked first.** A model is large. It downloads only after the reader confirms it, once, and stays in the browser's cache.
+- **Plain inputs.** The components are controlled by `value` and `onChange`, so they work with a state, a form or react-hook-form.
+
+The first component is [Speech Input](/docs/components/speech-input): a textarea that takes dictation, with the words showing while you speak.
+
+For an AI assistant, the docs come as Markdown too: [llms.txt](https://niekes.github.io/browser-ai/llms.txt) lists every page, [llms-full.txt](https://niekes.github.io/browser-ai/llms-full.txt) holds them all, and every page has a copy at its address plus `.md`.
+
+<Cards>
+  <Card title="Installation" href="/docs/installation" />
+  <Card title="Speech Input" href="/docs/components/speech-input" />
+</Cards>

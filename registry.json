@@ -1,0 +1,46 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry.json",
+  "name": "browser-ai",
+  "homepage": "https://github.com/niekes/browser-ai",
+  "items": [
+    {
+      "name": "use-speech-to-text",
+      "type": "registry:hook",
+      "title": "useSpeechToText",
+      "description": "Dictation with a speech recognition model that runs in the browser: the microphone, a Web Worker and the model, shared by every input of the page.",
+      "dependencies": ["parakeet.js@1.4.4"],
+      "files": [
+        {
+          "path": "registry/new-york/hooks/use-speech-to-text.ts",
+          "type": "registry:hook"
+        },
+        {
+          "path": "registry/new-york/hooks/speech-to-text.worker.ts",
+          "type": "registry:hook"
+        }
+      ],
+      "categories": ["ai", "speech"]
+    },
+    {
+      "name": "speech-input",
+      "type": "registry:ui",
+      "title": "Speech Input",
+      "description": "A textarea that takes dictation: live text while you speak, the final text at the cursor.",
+      "dependencies": ["lucide-react@^1.78.0"],
+      "registryDependencies": [
+        "button",
+        "progress",
+        "textarea",
+        "utils",
+        "niekes/browser-ai/use-speech-to-text"
+      ],
+      "files": [
+        {
+          "path": "registry/new-york/ui/speech-input.tsx",
+          "type": "registry:ui"
+        }
+      ],
+      "categories": ["ai", "speech", "forms"]
+    }
+  ]
+}
