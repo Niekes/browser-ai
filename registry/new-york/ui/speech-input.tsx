@@ -32,7 +32,8 @@ export type SpeechInputProps = Omit<ComponentProps<"textarea">, "value" | "onCha
 }
 
 const NOTICE: Partial<Record<SpeechToTextStatus, string>> = {
-  unsupported: "Speech input needs a desktop computer with a browser that runs WebGPU.",
+  unsupported:
+    "Speech input needs a desktop computer whose browser runs WebGPU with 16-bit floats.",
   loading: "Loading the speech model…",
   recording: "Listening… Click the microphone to stop, press Escape to cancel.",
   finishing: "Transcribing…",

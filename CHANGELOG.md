@@ -21,5 +21,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - The engine runs in every desktop browser whose GPU has WebGPU with 16-bit
-  floats (`shader-f16`), Safari and Firefox included, no longer only in
-  Chrome and Edge. Phones and tablets, iPad included, stay left out.
+  floats (`shader-f16`), no longer only in Chrome and Edge: Firefox runs it,
+  with live text every 3 s; Safari passes the check, a full run in it is not
+  verified yet. Phones and tablets, iPad included, stay left out.

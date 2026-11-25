@@ -194,13 +194,12 @@ const FALLBACK: Partial<Record<EngineStatus, EngineStatus>> = {
   loading: "downloaded",
 }
 
-// A phone or a tablet, iPadOS included, which calls itself a Mac with a touch screen.
-function mobile() {
-  const agent = navigator as Navigator & { userAgentData?: { mobile: boolean } }
+// A phone or a tablet; iPadOS calls itself a Mac, with a touch screen.
+function onPhoneOrTablet() {
+  const agent = navigator.userAgent
   return (
-    agent.userAgentData?.mobile ??
-    (/Mobi|Android|iPhone|iPad/.test(agent.userAgent) ||
-      (/Macintosh/.test(agent.userAgent) && agent.maxTouchPoints > 1))
+    /Mobi|Android|iPhone|iPad/.test(agent) ||
+    (/Macintosh/.test(agent) && navigator.maxTouchPoints > 1)
   )
 }
 
@@ -209,7 +208,7 @@ function subscribe(listener: () => void) {
   if (!worker) {
     worker = new Worker(new URL("./speech-to-text.worker.ts", import.meta.url), { type: "module" })
     worker.onmessage = received
-    worker.postMessage({ type: "probe", mobile: mobile() })
+    worker.postMessage({ type: "probe", mobile: onPhoneOrTablet() })
   }
   return () => listeners.delete(listener)
 }

@@ -40,7 +40,7 @@ describe("useSpeechToText", () => {
       { userAgent: "Mozilla/5.0 (Macintosh)", maxTouchPoints: 5 },
       true,
     ],
-    ["a phone that says so", { userAgentData: { mobile: true } }, true],
+    ["an Android tablet", { userAgent: "Mozilla/5.0 (Linux; Android 16)" }, true],
   ])("asks whether the engine runs on %s", async (_, agent, mobile) => {
     vi.stubGlobal("navigator", {
       userAgent: "Mozilla/5.0 (Macintosh)",

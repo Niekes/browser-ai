@@ -9,10 +9,17 @@ and tablets still lack the memory for a 1.3 GB model.
 
 Decision: the engine runs where the GPU adapter has `shader-f16` and the
 page is not on a phone or a tablet. The worker checks the adapter; the page
-tells it whether it is on a phone or a tablet (`navigator.userAgentData`,
-else the user agent, and a Mac with a touch screen, which is how iPadOS
-calls itself), as a worker cannot see an iPad. Elsewhere the input says so
+tells it whether it is on a phone or a tablet (its user agent, or a Mac
+with a touch screen, which is how iPadOS calls itself), as a worker cannot
+see an iPad. Elsewhere the input says so
 and stays a plain textarea. There is still no WASM fallback.
 
 What would reopen it: a desktop browser that passes the check and cannot
 load or run the model, or a Firefox fast enough for live text every second.
+
+## Considered Options
+
+- **Adding Safari and Firefox by name.** Rejected: the adapter's features say
+  what the engine needs, a browser's name does not.
+- **A WASM fallback where `shader-f16` is missing.** Not built: every desktop
+  browser measured has it, and live text on WASM is too slow (ADR-0004).

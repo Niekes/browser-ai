@@ -157,7 +157,7 @@ describe("SpeechInput", () => {
     const { worker } = await mount()
     worker.reply({ type: "probe", supported: false, cached: false })
     expect(screen.getByRole("status").textContent).toMatch(
-      /desktop computer with a browser that runs WebGPU/
+      /desktop computer whose browser runs WebGPU with 16-bit floats/
     )
     expect(mic().hasAttribute("disabled")).toBe(true)
   })

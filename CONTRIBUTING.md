@@ -15,7 +15,8 @@ pnpm docs:dev
 
 Node 22, 24 or newer and pnpm are required. The docs run at
 `http://localhost:5173/browser-ai/`. To try the speech input itself you need
-Chrome or Edge on a desktop computer with WebGPU.
+a desktop browser with WebGPU and 16-bit floats (`shader-f16`): Chrome or
+Edge, or Firefox, where the live text is slower.
 
 ## The checks that have to pass
 
