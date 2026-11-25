@@ -35,7 +35,7 @@ const [message, setMessage] = useState("")
 - **Local.** [Parakeet TDT 0.6B v3](https://huggingface.co/nvidia/parakeet-tdt-0.6b-v3) runs on the GPU through WebGPU, with [parakeet.js](https://github.com/ysdede/parakeet.js). It finds the language by itself.
 - **Asked first.** The model is about 1.3 GB. It downloads once the reader confirms it, and stays in the browser.
 - **Fast.** On an Apple M5, 5 s of audio transcribe in 0.2–0.3 s and 30 s in about a second, so the live text follows every second.
-- **Browsers.** Chrome and Edge on the desktop. Elsewhere the input says so and stays a textarea. No special headers needed.
+- **Browsers.** Desktop browsers with WebGPU and 16-bit floats: Chrome, Edge and Firefox, where the live text follows every 3 s; Safari passes the check, a full run in it is not verified yet. Phones and tablets are left out; there the input says so and stays a textarea. No special headers needed.
 
 The hook behind it, `useSpeechToText`, is an item of its own, for a dictation UI of your own:
 

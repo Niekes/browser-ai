@@ -17,3 +17,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   microphone, a Web Worker and Parakeet TDT 0.6B v3 on WebGPU, one engine
   per page and one dictation at a time. The model downloads once the reader
   confirms it.
+
+### Changed
+
+- The engine runs in every desktop browser whose GPU has WebGPU with 16-bit
+  floats (`shader-f16`), Safari and Firefox included, no longer only in
+  Chrome and Edge. Phones and tablets, iPad included, stay left out.

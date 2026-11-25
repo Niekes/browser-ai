@@ -18,12 +18,10 @@ let model: ParakeetModel | undefined
 // One message at a time: a session of the model runs one transcription at once.
 let queue = Promise.resolve()
 
-type UserAgentData = { brands: { brand: string }[]; mobile: boolean }
-
-// Chrome and Edge on the desktop, with a GPU that computes in 16-bit floats.
-async function supported() {
-  const agent = (navigator as Navigator & { userAgentData?: UserAgentData }).userAgentData
-  if (!agent?.brands.some(({ brand }) => brand === "Chromium") || agent.mobile) return false
+// A desktop browser with a GPU that computes in 16-bit floats; a phone or a tablet lacks the
+// memory for the model, which the page tells, as a worker cannot see an iPad.
+async function supported(mobile: boolean) {
+  if (mobile) return false
   const adapter = await navigator.gpu?.requestAdapter()
   return !!adapter?.features.has("shader-f16")
 }
@@ -79,9 +77,9 @@ async function transcribe(id: number, audio: Float32Array) {
   self.postMessage({ type: "text", id, text: result.utterance_text, words })
 }
 
-async function handle(data: { type: string; id: number; audio: Float32Array }) {
+async function handle(data: { type: string; id: number; audio: Float32Array; mobile: boolean }) {
   if (data.type === "probe") {
-    const ok = await supported()
+    const ok = await supported(data.mobile)
     self.postMessage({ type: "probe", supported: ok, cached: ok && (await cached()) })
   } else if (data.type === "load") {
     await load()

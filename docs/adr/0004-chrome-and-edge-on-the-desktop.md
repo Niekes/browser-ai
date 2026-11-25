@@ -1,5 +1,7 @@
 # Chrome and Edge on the desktop
 
+Status: superseded by [ADR-0005](0005-webgpu-with-16-bit-floats-on-the-desktop.md).
+
 Context: the encoder runs in 16-bit floats on WebGPU. Safari and Firefox
 differ in their WebGPU, phones lack the memory for a 1.3 GB model, and on
 WASM the model is far too slow for live text.
