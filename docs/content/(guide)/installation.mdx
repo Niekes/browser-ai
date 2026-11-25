@@ -45,11 +45,11 @@ npx shadcn@latest add @browser-ai/speech-input
 
 The models run on WebGPU with 16-bit floats (`shader-f16`), in a desktop browser. On a phone or a tablet, or without WebGPU, the components say so and stay usable as plain inputs.
 
-| Browser, on an Apple M5   | Runs         | One pass over 5 s / 30 s | Live text    |
-| ------------------------- | ------------ | ------------------------ | ------------ |
-| Chrome 158, Edge          | yes          | 0.12 s / 0.54 s          | every second |
-| Firefox 161               | yes          | 2.8 s / 3.1 s            | every 3 s    |
-| Safari 27.2               | not verified | not measured yet         | not measured |
-| Safari on iPhone and iPad | no           | –                        | –            |
+| Browser, on an Apple M5   | Runs | One pass over 5 s / 30 s | Live text             | Model cached          |
+| ------------------------- | ---- | ------------------------ | --------------------- | --------------------- |
+| Chrome 158, Edge          | yes  | 0.12 s / 0.54 s          | every second          | yes                   |
+| Firefox 161               | yes  | 2.8 s / 3.1 s            | every 3 s             | yes                   |
+| Safari 27.2               | yes  | 0.15 – 0.6 s / 0.8 – 3 s | every 1 – 3 s, stalls | not always: see below |
+| Safari on iPhone and iPad | no   | –                        | –                     | –                     |
 
-Safari has WebGPU with 16-bit floats and passes the check; a full run of the model in it is not verified yet. The page needs no special headers: no cross-origin isolation, so it runs on GitHub Pages, Vercel or any static host as it is.
+Safari transcribes as well as Chrome, but less reliably: its passes vary from run to run, and in two of three downloads it closed the database before parakeet.js could store the model, so the reader is asked to download it again on the next visit. The page needs no special headers: no cross-origin isolation, so it runs on GitHub Pages, Vercel or any static host as it is.
