@@ -1,0 +1,59 @@
+---
+title: Speech Input
+description: A textarea that takes dictation, with the words showing while you speak.
+---
+
+import SpeechInputDemo from "@/docs/examples/speech-input-demo"
+
+<Tabs items={["Preview", "Code"]}>
+  <Tab value="Preview">
+    <SpeechInputDemo />
+  </Tab>
+  <Tab value="Code">
+    <include>../../examples/speech-input-demo.tsx</include>
+  </Tab>
+</Tabs>
+
+## Installation
+
+<Tabs items={["CLI", "Manual"]}>
+  <Tab value="CLI">
+    ```package-install
+    npx shadcn@latest add niekes/browser-ai/speech-input
+    ```
+  </Tab>
+  <Tab value="Manual">
+    Add shadcn's `button`, `progress` and `textarea`, and install the dependencies:
+
+    ```package-install
+    npm install parakeet.js@1.4.4 lucide-react
+    ```
+
+    Copy [useSpeechToText](/docs/components/use-speech-to-text) and its worker into `hooks/`, then this code into `components/ui/speech-input.tsx`:
+
+    <include>../../../registry/new-york/ui/speech-input.tsx</include>
+
+    Update the import paths to match your project setup.
+
+  </Tab>
+</Tabs>
+
+## Usage
+
+Click the microphone and speak; click it again to stop, or press Escape to cancel. The first click asks to download the model, once. The words show at the cursor while you speak, and the final text lands there when you stop: typing and speaking mix.
+
+The input is controlled by `value` and `onChange`, which receives the new text, so it fits a state or a form. With react-hook-form:
+
+```tsx
+<FormField
+  control={form.control}
+  name="message"
+  render={({ field }) => <SpeechInput value={field.value} onChange={field.onChange} />}
+/>
+```
+
+Every other prop goes to the textarea. While a dictation runs, the textarea is read-only.
+
+## API Reference
+
+<auto-type-table path="../../../registry/new-york/ui/speech-input.tsx" name="SpeechInputProps" />

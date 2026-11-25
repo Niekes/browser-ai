@@ -1,0 +1,108 @@
+{
+  "$schema": "https://raw.githubusercontent.com/fallow-rs/fallow/main/schema.json",
+
+  // The docs site is a dev surface of the repository: no registry file
+  // imports it, so its packages stay devDependencies while the dependencies
+  // name what the registry items need at runtime.
+  "ignoreDependencies": [
+    "@fontsource-variable/geist",
+    "@fontsource-variable/geist-mono",
+    "fumadocs-core",
+    "fumadocs-mdx",
+    "fumadocs-ui",
+    "react-dom",
+    "react-router",
+  ],
+
+  // The entry points. The registry files are consumed by the projects that
+  // install them, the worker by the URL the hook builds, shadcn's components
+  // by whoever needs them, and the MDX pages, which import the examples, by the glob of the
+  // docs source.
+  "entry": [
+    "registry/new-york/ui/*.tsx",
+    "registry/new-york/hooks/*.ts",
+    "components/ui/*.tsx",
+    "docs/examples/*.tsx",
+    "docs/content/**/*.mdx",
+    "react-router.config.ts",
+    "playwright.config.ts",
+    "e2e/*.spec.ts",
+  ],
+
+  // Every rule that can catch a violation of the documented architecture is
+  // an error, so the gates fail the build.
+  "rules": {
+    "unused-files": "error",
+    "unused-exports": "error",
+    "unused-types": "error",
+    "unused-class-members": "error",
+    "private-type-leaks": "error",
+    "unresolved-imports": "error",
+    "unlisted-dependencies": "error",
+    "duplicate-exports": "error",
+    "circular-dependencies": "error",
+    "re-export-cycle": "error",
+    "boundary-violation": "error",
+    "coverage-gaps": "error",
+    "stale-suppressions": "warn",
+  },
+
+  // The architecture:
+  //
+  //   registry/new-york/ui/*        ui       ->  hooks, shadcn, lib
+  //   registry/new-york/hooks/*     hooks    ->  (nothing)
+  //   components/ui/*               shadcn   ->  lib
+  //   lib/*                         lib      ->  (nothing)
+  //   tests/*, e2e/*                tests    ->  tests, ui, hooks
+  //   docs/*                        docs     ->  docs, ui, hooks, shadcn, lib
+  //   scripts/*                     tooling  ->  (nothing)
+  //
+  // Dependencies point inwards only. A component builds on its hook, the
+  // hook knows no component, and `components/ui` holds shadcn's own
+  // components as an installing project has them.
+  "boundaries": {
+    "zones": [
+      { "name": "ui", "patterns": ["registry/new-york/ui/**"] },
+      { "name": "hooks", "patterns": ["registry/new-york/hooks/**"] },
+      { "name": "shadcn", "patterns": ["components/ui/**"] },
+      { "name": "lib", "patterns": ["lib/**"] },
+      { "name": "tests", "patterns": ["tests/**", "e2e/**"] },
+      { "name": "docs", "patterns": ["docs/**"] },
+      { "name": "tooling", "patterns": ["scripts/**"] },
+    ],
+    "rules": [
+      { "from": "ui", "allow": ["hooks", "shadcn", "lib"] },
+      { "from": "hooks", "allow": [] },
+      { "from": "shadcn", "allow": ["lib"] },
+      { "from": "lib", "allow": [] },
+      { "from": "tests", "allow": ["tests", "ui", "hooks"] },
+      { "from": "docs", "allow": ["docs", "ui", "hooks", "shadcn", "lib"] },
+      { "from": "tooling", "allow": [] },
+    ],
+    "coverage": {
+      "requireAllFiles": true,
+      "allowUnmatched": ["vite.config.ts", "react-router.config.ts", "playwright.config.ts"],
+    },
+    // No logging in code that lands in other projects.
+    "calls": {
+      "forbidden": [
+        { "from": "ui", "callee": ["console.*", "debugger"] },
+        { "from": "hooks", "callee": ["console.*", "debugger"] },
+      ],
+    },
+  },
+  // Test files have large `describe()` blocks which are not a code quality
+  // concern. The docs and the configs are exercised by the docs build, the
+  // shadcn components by shadcn, not by a unit test.
+  "health": {
+    "ignore": [
+      "tests/**",
+      "e2e/**",
+      "docs/**",
+      "scripts/**",
+      "components/**",
+      "react-router.config.ts",
+      "playwright.config.ts",
+    ],
+  },
+}

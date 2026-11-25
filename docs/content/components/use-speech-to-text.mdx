@@ -1,0 +1,69 @@
+---
+title: useSpeechToText
+description: The hook behind Speech Input, for a dictation UI of your own.
+---
+
+import UseSpeechToTextDemo from "@/docs/examples/use-speech-to-text-demo"
+
+<Tabs items={["Preview", "Code"]}>
+  <Tab value="Preview">
+    <UseSpeechToTextDemo />
+  </Tab>
+  <Tab value="Code">
+    <include>../../examples/use-speech-to-text-demo.tsx</include>
+  </Tab>
+</Tabs>
+
+## Installation
+
+<Tabs items={["CLI", "Manual"]}>
+  <Tab value="CLI">
+    ```package-install
+    npx shadcn@latest add niekes/browser-ai/use-speech-to-text
+    ```
+  </Tab>
+  <Tab value="Manual">
+    ```package-install
+    npm install parakeet.js@1.4.4
+    ```
+
+    Copy this code into `hooks/use-speech-to-text.ts`:
+
+    <include>../../../registry/new-york/hooks/use-speech-to-text.ts</include>
+
+    And the worker, beside it, into `hooks/speech-to-text.worker.ts`:
+
+    <include>../../../registry/new-york/hooks/speech-to-text.worker.ts</include>
+
+  </Tab>
+</Tabs>
+
+## Usage
+
+The hook controls the microphone, the worker and the model. Every hook of the page shares one engine, and only one of them dictates at a time.
+
+```tsx
+const speech = useSpeechToText({ onFinal: (text) => append(text) })
+```
+
+| Status           | Means                                                              |
+| ---------------- | ------------------------------------------------------------------ |
+| `checking`       | The worker looks at the browser and its cache.                     |
+| `unsupported`    | The browser cannot run the model: not Chrome or Edge on a desktop. |
+| `not-downloaded` | The model needs a download: ask, then call `download()`.           |
+| `downloading`    | The model downloads; `progress` goes from 0 to 1.                  |
+| `downloaded`     | The model is cached; `start()` loads it, then records.             |
+| `loading`        | The model loads from the cache.                                    |
+| `ready`          | `start()` records.                                                 |
+| `busy`           | Another input dictates.                                            |
+| `recording`      | This hook dictates; `liveText` shows what was said so far.         |
+| `finishing`      | The last pass runs; `onFinal` receives the final text.             |
+
+`error` names what went wrong last - a download that broke off, a microphone the browser refused - while the status goes back to where the reader can try again.
+
+## API Reference
+
+<auto-type-table
+  path="../../../registry/new-york/hooks/use-speech-to-text.ts"
+  name="UseSpeechToTextOptions"
+/>

@@ -1,0 +1,56 @@
+name: Bug report
+description: A component does not behave the way it should
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report this. A reproduction is worth more
+        than a description — a StackBlitz, a CodeSandbox or a minimal snippet is ideal.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What did you expect, and what happened instead?
+      placeholder: The live text stops after a minute of dictation.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction
+      description: A StackBlitz, a CodeSandbox, a gist, or a minimal snippet that shows the problem.
+      placeholder: https://stackblitz.com/...
+    validations:
+      required: true
+
+  - type: input
+    id: item
+    attributes:
+      label: Registry item and version
+      description: The item you installed and the tag or commit, if you pinned one.
+      placeholder: niekes/browser-ai/speech-input#v0.1.0
+    validations:
+      required: true
+
+  - type: input
+    id: browser
+    attributes:
+      label: Browser, operating system and GPU
+      placeholder: Chrome 158, macOS 26, Apple M5
+    validations:
+      required: true
+
+  - type: input
+    id: stack
+    attributes:
+      label: React, Tailwind CSS and framework versions
+      placeholder: React 19.3, Tailwind CSS 4.3, Next.js 16.4
+
+  - type: textarea
+    id: anything-else
+    attributes:
+      label: Anything else
+      description: Console output, screenshots, or a link to a related issue.
