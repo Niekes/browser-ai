@@ -127,8 +127,9 @@ download, engine) and the decisions in `docs/adr/`.
   `progress`, `ready`, `text`, `error` out.
 - **Live text** (ADR-0002): a pass over the whole dictation about every
   second; past a minute the older words freeze.
-- **The download is confirmed** (ADR-0003); **Chrome and Edge on the
-  desktop** (ADR-0004).
+- **The download is confirmed** (ADR-0003); **desktop browsers with WebGPU
+  and `shader-f16`** (ADR-0005): the worker checks the adapter, the page
+  tells it whether it is on a phone or a tablet.
 - **The input is controlled.** `SpeechInput` takes `value` and
   `onChange(value)`, shows the live text at the cursor while the textarea is
   read-only, and calls `onChange` once with the final text.

@@ -40,13 +40,15 @@ class FakeContext {
   close = vi.fn(async () => {})
 }
 
-// The browser of a desktop Chrome: the worker, the audio graph and a microphone.
+// The browser of a desktop: the worker, the audio graph and a microphone.
 export function stubBrowser() {
   track.stop.mockClear()
   vi.stubGlobal("Worker", FakeWorker)
   vi.stubGlobal("AudioContext", FakeContext)
   vi.stubGlobal("AudioWorkletNode", FakeNode)
   vi.stubGlobal("navigator", {
+    userAgent: "Mozilla/5.0 (Macintosh)",
+    maxTouchPoints: 0,
     mediaDevices: { getUserMedia: async () => ({ getTracks: () => [track] }) },
   })
 }

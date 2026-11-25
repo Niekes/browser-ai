@@ -156,7 +156,9 @@ describe("SpeechInput", () => {
   it("says why it cannot dictate in this browser", async () => {
     const { worker } = await mount()
     worker.reply({ type: "probe", supported: false, cached: false })
-    expect(screen.getByRole("status").textContent).toMatch(/Chrome or Edge/)
+    expect(screen.getByRole("status").textContent).toMatch(
+      /desktop computer whose browser runs WebGPU with 16-bit floats/
+    )
     expect(mic().hasAttribute("disabled")).toBe(true)
   })
 

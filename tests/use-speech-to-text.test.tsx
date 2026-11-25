@@ -31,6 +31,27 @@ afterEach(() => {
 })
 
 describe("useSpeechToText", () => {
+  it.each([
+    ["a desktop", {}, false],
+    ["an iPhone", { userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 26_0 like Mac OS X)" }, true],
+    ["an Android phone", { userAgent: "Mozilla/5.0 (Linux; Android 16) Mobile" }, true],
+    [
+      "an iPad, which calls itself a Mac",
+      { userAgent: "Mozilla/5.0 (Macintosh)", maxTouchPoints: 5 },
+      true,
+    ],
+    ["an Android tablet", { userAgent: "Mozilla/5.0 (Linux; Android 16)" }, true],
+  ])("asks whether the engine runs on %s", async (_, agent, mobile) => {
+    vi.stubGlobal("navigator", {
+      userAgent: "Mozilla/5.0 (Macintosh)",
+      maxTouchPoints: 0,
+      ...agent,
+    })
+    const { useSpeechToText } = await load()
+    renderHook(() => useSpeechToText({ onFinal: () => {} }))
+    expect(FakeWorker.last.sent).toEqual([{ type: "probe", mobile }])
+  })
+
   it("says so where the browser cannot run the engine", async () => {
     const { useSpeechToText } = await load()
     const { result } = renderHook(() => useSpeechToText({ onFinal: () => {} }))

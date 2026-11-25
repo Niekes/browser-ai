@@ -42,8 +42,7 @@ function fakeIndexedDB(keys: string[], fails = false) {
   }
 }
 
-const chrome = (features: string[], brand = "Chromium", mobile = false) => ({
-  userAgentData: { brands: [{ brand }], mobile },
+const browser = (features: string[]) => ({
   gpu: { requestAdapter: async () => ({ features: new Set(features) }) },
 })
 
@@ -61,7 +60,7 @@ async function send(data: object) {
 beforeEach(async () => {
   vi.resetModules()
   vi.stubGlobal("self", scope)
-  vi.stubGlobal("navigator", chrome(["shader-f16"]))
+  vi.stubGlobal("navigator", browser(["shader-f16"]))
   vi.stubGlobal("indexedDB", fakeIndexedDB(ALL))
   fromHub.mockReset().mockResolvedValue({ transcribe })
   transcribe.mockReset()
@@ -91,13 +90,13 @@ describe("the speech-to-text worker", () => {
   })
 
   it.each([
-    ["a GPU without 16-bit floats", chrome([])],
-    ["Safari", chrome(["shader-f16"], "Safari")],
-    ["a phone", chrome(["shader-f16"], "Chromium", true)],
-    ["a browser without WebGPU", { userAgentData: { brands: [{ brand: "Chromium" }] } }],
-  ])("finds no engine on %s", async (_, agent) => {
+    ["a GPU without 16-bit floats", browser([]), false],
+    ["a phone or a tablet", browser(["shader-f16"]), true],
+    ["a browser without WebGPU", {}, false],
+    ["a GPU it cannot get", { gpu: { requestAdapter: async () => null } }, false],
+  ])("finds no engine on %s", async (_, agent, mobile) => {
     vi.stubGlobal("navigator", agent)
-    expect(await send({ type: "probe" })).toEqual([
+    expect(await send({ type: "probe", mobile })).toEqual([
       { type: "probe", supported: false, cached: false },
     ])
   })

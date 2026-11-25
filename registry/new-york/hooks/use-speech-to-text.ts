@@ -194,12 +194,21 @@ const FALLBACK: Partial<Record<EngineStatus, EngineStatus>> = {
   loading: "downloaded",
 }
 
+// A phone or a tablet; iPadOS calls itself a Mac, with a touch screen.
+function onPhoneOrTablet() {
+  const agent = navigator.userAgent
+  return (
+    /Mobi|Android|iPhone|iPad/.test(agent) ||
+    (/Macintosh/.test(agent) && navigator.maxTouchPoints > 1)
+  )
+}
+
 function subscribe(listener: () => void) {
   listeners.add(listener)
   if (!worker) {
     worker = new Worker(new URL("./speech-to-text.worker.ts", import.meta.url), { type: "module" })
     worker.onmessage = received
-    worker.postMessage({ type: "probe" })
+    worker.postMessage({ type: "probe", mobile: onPhoneOrTablet() })
   }
   return () => listeners.delete(listener)
 }
