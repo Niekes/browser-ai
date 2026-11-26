@@ -61,6 +61,7 @@ function browserRecognition() {
 }
 
 const RATE = 16000
+const NO_MIC = "The microphone is not available."
 // The live text is transcribed anew about every second.
 const PASS_MS = 1000
 // Past a minute of audio the older text freezes; the last seconds stay live.
@@ -180,13 +181,25 @@ async function begin(owner: string, callback: (text: string) => void) {
     timer = setTimeout(transcribe, PASS_MS)
   } catch {
     end()
-    update({ error: "The microphone is not available." })
+    update({ error: NO_MIC })
   }
 }
 
 // The browser fallback: the browser's own speech recognition hears the dictation instead.
 let recognition: Recognition | undefined
-const MIC_ERRORS = new Set(["not-allowed", "audio-capture"])
+// What the browser's errors mean to the reader; "no-speech" and "aborted" end like a stop.
+const RECOGNITION_ERRORS: Record<string, string> = {
+  "not-allowed": NO_MIC,
+  "audio-capture": NO_MIC,
+  "service-not-allowed": "The browser's speech recognition is turned off on this device.",
+}
+
+function failed(error: string) {
+  end()
+  update({
+    error: RECOGNITION_ERRORS[error] ?? `The browser's speech recognition failed (${error}).`,
+  })
+}
 
 function listen(owner: string, callback: (text: string) => void) {
   const Recognition = browserRecognition()!
@@ -202,15 +215,10 @@ function listen(owner: string, callback: (text: string) => void) {
     const liveText = join(...Array.from(results, (result) => result[0].transcript.trim()))
     update({ dictation: { ...shared.dictation!, liveText } })
   }
-  // "no-speech" ends like a stop; "aborted" follows a cancel, already handled.
+  // After a cancel, recognition is no longer current: the "aborted" that follows is ignored.
   current.onerror = ({ error }) => {
-    if (recognition !== current || error === "no-speech") return
-    end()
-    update({
-      error: MIC_ERRORS.has(error)
-        ? "The microphone is not available."
-        : `The browser's speech recognition failed (${error}).`,
-    })
+    if (recognition !== current || error === "no-speech" || error === "aborted") return
+    failed(error)
   }
   // The browser stops after a stop, and by itself after a silence: either way the text is final.
   current.onend = () => {
@@ -221,7 +229,11 @@ function listen(owner: string, callback: (text: string) => void) {
     onFinal(text)
   }
   update({ error: undefined, dictation: { owner, phase: "recording", liveText: "" } })
-  current.start()
+  try {
+    current.start()
+  } catch (error) {
+    failed((error as Error).name)
+  }
 }
 
 function releaseMic() {

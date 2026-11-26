@@ -192,6 +192,7 @@ describe("SpeechInput with the browser fallback", () => {
     FakeRecognition.last.hear("big")
     expect(field.value).toBe("Hello big world")
     expect(field.readOnly).toBe(true)
+    expect(screen.getByRole("status").textContent).toMatch(/^Listening….*leave this device/)
 
     fireEvent.click(screen.getByRole("button", { name: "Stop dictation" }))
     FakeRecognition.last.end()

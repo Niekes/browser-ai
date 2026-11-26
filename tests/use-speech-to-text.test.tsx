@@ -321,14 +321,34 @@ describe("useSpeechToText with the browser fallback", () => {
     expect(result.current).toMatchObject({ status: "browser-fallback", liveText: "" })
   })
 
-  it("hands over the text when the browser stops listening by itself", async () => {
-    const { result, onFinal } = await fallback()
+  it.each(["no-speech", "aborted"])(
+    "hands over the text when the browser stops listening by itself (%s)",
+    async (error) => {
+      const { result, onFinal } = await fallback()
+      act(() => result.current.start())
+      FakeRecognition.last.hear("Hello.")
+      FakeRecognition.last.fail(error)
+      FakeRecognition.last.end()
+      expect(onFinal).toHaveBeenCalledWith("Hello.")
+      expect(result.current.error).toBeUndefined()
+    }
+  )
+
+  it("reports a recognition the browser would not start", async () => {
+    const { result } = await fallback()
+    vi.stubGlobal(
+      "webkitSpeechRecognition",
+      class extends FakeRecognition {
+        start = vi.fn(() => {
+          throw new DOMException("Already started.", "InvalidStateError")
+        })
+      }
+    )
     act(() => result.current.start())
-    FakeRecognition.last.hear("Hello.")
-    FakeRecognition.last.fail("no-speech")
-    FakeRecognition.last.end()
-    expect(onFinal).toHaveBeenCalledWith("Hello.")
-    expect(result.current.error).toBeUndefined()
+    expect(result.current).toMatchObject({
+      status: "browser-fallback",
+      error: "The browser's speech recognition failed (InvalidStateError).",
+    })
   })
 
   it("drops a cancelled dictation without any text", async () => {
@@ -347,6 +367,7 @@ describe("useSpeechToText with the browser fallback", () => {
   it.each([
     ["not-allowed", "The microphone is not available."],
     ["audio-capture", "The microphone is not available."],
+    ["service-not-allowed", "The browser's speech recognition is turned off on this device."],
     ["network", "The browser's speech recognition failed (network)."],
   ])("reports %s and drops the dictation", async (error, message) => {
     const { result, onFinal } = await fallback()

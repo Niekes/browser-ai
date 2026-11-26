@@ -117,8 +117,18 @@ function DownloadProgress({ progress }: { progress: number }) {
   )
 }
 
-function Status({ status, error }: { status: SpeechToTextStatus; error?: string }) {
-  const message = error ?? NOTICE[status]
+function Status({
+  status,
+  error,
+  browser,
+}: {
+  status: SpeechToTextStatus
+  error?: string
+  browser: boolean
+}) {
+  // While the browser's speech recognition listens, the reader still sees where the audio may go.
+  const message =
+    error ?? (browser ? `${NOTICE[status]} ${NOTICE["browser-fallback"]}` : NOTICE[status])
   return message ? (
     <p
       data-slot="speech-input-status"
@@ -137,7 +147,7 @@ function useDictation(
   browserFallback: boolean | undefined
 ) {
   const textarea = useRef<HTMLTextAreaElement>(null)
-  const [anchor, setAnchor] = useState({ start: value.length, end: value.length })
+  const [anchor, setAnchor] = useState({ start: value.length, end: value.length, browser: false })
   const speech = useSpeechToText({
     onFinal: (text) => {
       const next = insertAtCursor(value, anchor.start, anchor.end, text)
@@ -153,11 +163,22 @@ function useDictation(
   const shown = dictating ? insertAtCursor(value, anchor.start, anchor.end, speech.liveText) : null
 
   function start() {
-    setAnchor({ start: textarea.current!.selectionStart, end: textarea.current!.selectionEnd })
+    setAnchor({
+      start: textarea.current!.selectionStart,
+      end: textarea.current!.selectionEnd,
+      browser: speech.status === "browser-fallback",
+    })
     speech.start()
   }
 
-  return { textarea, speech, dictating, shown: shown?.value ?? value, start }
+  return {
+    textarea,
+    speech,
+    dictating,
+    shown: shown?.value ?? value,
+    start,
+    viaBrowser: dictating && anchor.browser,
+  }
 }
 
 /**
@@ -171,7 +192,7 @@ export function SpeechInput({
   className,
   ...props
 }: SpeechInputProps) {
-  const { textarea, speech, dictating, shown, start } = useDictation(
+  const { textarea, speech, dictating, shown, start, viaBrowser } = useDictation(
     value,
     onChange,
     browserFallback
@@ -215,7 +236,7 @@ export function SpeechInput({
       ) : status === "downloading" ? (
         <DownloadProgress progress={speech.progress} />
       ) : (
-        <Status status={status} error={speech.error} />
+        <Status status={status} error={speech.error} browser={viaBrowser} />
       )}
     </div>
   )

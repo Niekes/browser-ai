@@ -113,7 +113,7 @@ The rules that `scripts/check-template.mjs` enforces:
 ### Speech input
 
 The terms are in `GLOSSARY.md` (dictation, live text, final text, model
-download, engine) and the decisions in `docs/adr/`.
+download, engine, browser fallback) and the decisions in `docs/adr/`.
 
 - **One engine per page** (ADR-0001). `use-speech-to-text.ts` keeps the
   worker, the model state and the one dictation in module state, read through
@@ -128,6 +128,11 @@ download, engine) and the decisions in `docs/adr/`.
 - **The download is confirmed** (ADR-0003); **desktop browsers with WebGPU
   and `shader-f16`** (ADR-0005): the worker checks the adapter, the page
   tells it whether it is on a phone or a tablet.
+- **The browser fallback is opt-in** (ADR-0006): with `browserFallback`,
+  where the engine cannot run, the hook dictates with the browser's
+  `SpeechRecognition` instead, without the worker, and reads
+  `browser-fallback`; the input says the audio may leave the device. Off,
+  nothing changes. The docs examples turn it on.
 - **The input is controlled.** `SpeechInput` takes `value` and
   `onChange(value)`, shows the live text at the cursor while the textarea is
   read-only, and calls `onChange` once with the final text.
