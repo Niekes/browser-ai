@@ -4,7 +4,7 @@ import { useState } from "react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test"
 
 import { insertAtCursor } from "@/registry/new-york/ui/speech-input"
-import { FakeNode, FakeWorker, stubBrowser } from "./fakes"
+import { FakeNode, FakeRecognition, FakeWorker, stubBrowser } from "./fakes"
 
 describe("insertAtCursor", () => {
   it("puts dictated text at the caret, spaced from the words around it", () => {
@@ -35,7 +35,7 @@ describe("insertAtCursor", () => {
 })
 
 // A form that owns the text, as react-hook-form or a state does.
-async function mount(initial = "", props: { disabled?: boolean } = {}) {
+async function mount(initial = "", props: { disabled?: boolean; browserFallback?: boolean } = {}) {
   vi.resetModules()
   const { SpeechInput } = await import("@/registry/new-york/ui/speech-input")
   const changes = vi.fn()
@@ -172,6 +172,48 @@ describe("SpeechInput", () => {
   it("stays off while the field is disabled", async () => {
     const { worker } = await mount("", { disabled: true })
     worker.reply({ type: "probe", supported: true, cached: true })
+    expect(mic().hasAttribute("disabled")).toBe(true)
+  })
+})
+
+describe("SpeechInput with the browser fallback", () => {
+  beforeEach(() => vi.stubGlobal("webkitSpeechRecognition", FakeRecognition))
+
+  it("says the browser's speech recognition hears the dictation, and dictates at the cursor", async () => {
+    const { changes, worker, field } = await mount("Hello world", { browserFallback: true })
+    worker.reply({ type: "probe", supported: false, cached: false })
+    expect(screen.getByRole("status").textContent).toMatch(
+      /browser's speech recognition.*leave this device/
+    )
+
+    field.setSelectionRange(5, 5)
+    fireEvent.click(mic())
+    expect(screen.queryByRole("button", { name: "Download" })).toBeNull()
+    FakeRecognition.last.hear("big")
+    expect(field.value).toBe("Hello big world")
+    expect(field.readOnly).toBe(true)
+
+    fireEvent.click(screen.getByRole("button", { name: "Stop dictation" }))
+    FakeRecognition.last.end()
+    expect(changes).toHaveBeenCalledWith("Hello big world")
+    expect(field.readOnly).toBe(false)
+  })
+
+  it("cancels with Escape", async () => {
+    const { changes, worker, field } = await mount("Hello", { browserFallback: true })
+    worker.reply({ type: "probe", supported: false, cached: false })
+    fireEvent.click(mic())
+    FakeRecognition.last.hear("big")
+    fireEvent.keyDown(field, { key: "Escape" })
+    FakeRecognition.last.end()
+    expect(field.value).toBe("Hello")
+    expect(changes).not.toHaveBeenCalled()
+  })
+
+  it("keeps the notice where the page leaves it off", async () => {
+    const { worker } = await mount()
+    worker.reply({ type: "probe", supported: false, cached: false })
+    expect(screen.getByRole("status").textContent).toMatch(/WebGPU with 16-bit floats/)
     expect(mic().hasAttribute("disabled")).toBe(true)
   })
 })

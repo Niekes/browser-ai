@@ -28,3 +28,9 @@ _Avoid_: install, setup, fetch
 **Engine**:
 The model and the runtime that turn a dictation into text.
 _Avoid_: backend, provider, recognizer, ASR
+
+**Browser fallback**:
+The browser's own speech recognition, which takes the dictation where the
+engine cannot run, if the page turns it on. It need not run on the device:
+the audio may go to the browser's maker.
+_Avoid_: native engine, Web Speech engine, cloud mode

@@ -43,7 +43,7 @@ npx shadcn@latest add @browser-ai/speech-input
 
 ## Browsers
 
-The models run on WebGPU with 16-bit floats (`shader-f16`), in a desktop browser. On a phone or a tablet, or without WebGPU, the components say so and stay usable as plain inputs.
+The models run on WebGPU with 16-bit floats (`shader-f16`), in a desktop browser. On a phone or a tablet, or without WebGPU, the components say so and stay usable as plain inputs - unless `browserFallback` is on: then they dictate with the browser's own speech recognition, which may send the audio off the device ([how it works](/docs/how-it-works#the-browser-fallback)).
 
 | Browser, on an Apple M5   | Runs | One pass over 5 s / 30 s | Live text                                    | Model cached                     |
 | ------------------------- | ---- | ------------------------ | -------------------------------------------- | -------------------------------- |
@@ -51,5 +51,13 @@ The models run on WebGPU with 16-bit floats (`shader-f16`), in a desktop browser
 | Firefox 161               | yes  | 2.8 s / 3.1 s            | every 3 s                                    | yes                              |
 | Safari 27.2               | yes  | 0.16 s / 0.8 – 1.1 s     | every second; every 1 – 3 s after a download | if the page stays in view: below |
 | Safari on iPhone and iPad | no   | –                        | –                                            | –                                |
+
+Where the model does not run, `browserFallback` decides:
+
+| Browser                                  | With `browserFallback`                                |
+| ---------------------------------------- | ----------------------------------------------------- |
+| Safari on iPhone and iPad                | Apple's speech recognition; the audio may go to Apple |
+| Chrome on Android, Chrome without WebGPU | Google's speech recognition; the audio goes to Google |
+| Firefox                                  | none: no Web Speech API, the input stays plain        |
 
 Safari suspends a page that is out of sight, behind another window or in a background tab: a transcription stalls until it comes back, and a download that ends there may not be stored, so the reader is asked to download it again on the next visit. Right after the download, until the page is reloaded, Safari's passes take up to three times as long. The page needs no special headers: no cross-origin isolation, so it runs on GitHub Pages, Vercel or any static host as it is.

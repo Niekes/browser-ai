@@ -29,18 +29,32 @@ export type SpeechInputProps = Omit<ComponentProps<"textarea">, "value" | "onCha
   value: string
   /** Receives the new text, after typing and after each dictation. */
   onChange: (value: string) => void
+  /**
+   * Where the model cannot run, dictates with the browser's own speech recognition instead, if
+   * the browser has one. It need not run on the device: the audio may go to the browser's maker.
+   * @defaultValue false
+   */
+  browserFallback?: boolean
 }
 
 const NOTICE: Partial<Record<SpeechToTextStatus, string>> = {
   unsupported:
     "Speech input needs a desktop computer whose browser runs WebGPU with 16-bit floats.",
+  "browser-fallback":
+    "Dictation uses this browser's speech recognition: the audio may leave this device.",
   loading: "Loading the speech model…",
   recording: "Listening… Click the microphone to stop, press Escape to cancel.",
   finishing: "Transcribing…",
 }
 
 // The mic starts a dictation in these states, and stops one while recording.
-const MIC_ON = new Set<SpeechToTextStatus>(["not-downloaded", "downloaded", "ready", "recording"])
+const MIC_ON = new Set<SpeechToTextStatus>([
+  "not-downloaded",
+  "downloaded",
+  "ready",
+  "browser-fallback",
+  "recording",
+])
 
 function DownloadPrompt({
   onConfirm,
@@ -117,7 +131,11 @@ function Status({ status, error }: { status: SpeechToTextStatus; error?: string 
 }
 
 // A dictation at the cursor: the live text shows there, the final text lands there.
-function useDictation(value: string, onChange: (value: string) => void) {
+function useDictation(
+  value: string,
+  onChange: (value: string) => void,
+  browserFallback: boolean | undefined
+) {
   const textarea = useRef<HTMLTextAreaElement>(null)
   const [anchor, setAnchor] = useState({ start: value.length, end: value.length })
   const speech = useSpeechToText({
@@ -129,6 +147,7 @@ function useDictation(value: string, onChange: (value: string) => void) {
         textarea.current?.setSelectionRange(next.caret, next.caret)
       })
     },
+    browserFallback,
   })
   const dictating = speech.status === "recording" || speech.status === "finishing"
   const shown = dictating ? insertAtCursor(value, anchor.start, anchor.end, speech.liveText) : null
@@ -145,8 +164,18 @@ function useDictation(value: string, onChange: (value: string) => void) {
  * A textarea that takes dictation: the mic button records, the words show as they are spoken,
  * and the final text lands at the cursor. Speech recognition runs in the browser.
  */
-export function SpeechInput({ value, onChange, className, ...props }: SpeechInputProps) {
-  const { textarea, speech, dictating, shown, start } = useDictation(value, onChange)
+export function SpeechInput({
+  value,
+  onChange,
+  browserFallback,
+  className,
+  ...props
+}: SpeechInputProps) {
+  const { textarea, speech, dictating, shown, start } = useDictation(
+    value,
+    onChange,
+    browserFallback
+  )
   const [asking, setAsking] = useState(false)
   const { status } = speech
 

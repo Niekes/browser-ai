@@ -46,18 +46,21 @@ The hook controls the microphone, the worker and the model. Every hook of the pa
 const speech = useSpeechToText({ onFinal: (text) => append(text) })
 ```
 
-| Status           | Means                                                                                   |
-| ---------------- | --------------------------------------------------------------------------------------- |
-| `checking`       | The worker looks at the browser and its cache.                                          |
-| `unsupported`    | The browser cannot run the model: no WebGPU with 16-bit floats, or a phone or a tablet. |
-| `not-downloaded` | The model needs a download: ask, then call `download()`.                                |
-| `downloading`    | The model downloads; `progress` goes from 0 to 1.                                       |
-| `downloaded`     | The model is cached; `start()` loads it, then records.                                  |
-| `loading`        | The model loads from the cache.                                                         |
-| `ready`          | `start()` records.                                                                      |
-| `busy`           | Another input dictates.                                                                 |
-| `recording`      | This hook dictates; `liveText` shows what was said so far.                              |
-| `finishing`      | The last pass runs; `onFinal` receives the final text.                                  |
+| Status             | Means                                                                                                                                                              |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `checking`         | The worker looks at the browser and its cache.                                                                                                                     |
+| `unsupported`      | The browser cannot run the model: no WebGPU with 16-bit floats, or a phone or a tablet.                                                                            |
+| `browser-fallback` | The model cannot run, and with `browserFallback` the browser's speech recognition takes the dictation: `start()` records. Say that the audio may leave the device. |
+| `not-downloaded`   | The model needs a download: ask, then call `download()`.                                                                                                           |
+| `downloading`      | The model downloads; `progress` goes from 0 to 1.                                                                                                                  |
+| `downloaded`       | The model is cached; `start()` loads it, then records.                                                                                                             |
+| `loading`          | The model loads from the cache.                                                                                                                                    |
+| `ready`            | `start()` records.                                                                                                                                                 |
+| `busy`             | Another input dictates.                                                                                                                                            |
+| `recording`        | This hook dictates; `liveText` shows what was said so far.                                                                                                         |
+| `finishing`        | The last pass runs; `onFinal` receives the final text.                                                                                                             |
+
+`browserFallback: true` turns on the [browser fallback](/docs/how-it-works#the-browser-fallback): where the model cannot run, the browser's own speech recognition dictates, and the audio may leave the device. It is off by default.
 
 `error` names what went wrong last - a download that broke off, a microphone the browser refused - while the status goes back to where the reader can try again.
 

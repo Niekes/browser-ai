@@ -9,7 +9,7 @@ import SpeechInputDemo from "@/docs/examples/speech-input-demo"
 
 browser-ai is a set of copy-paste components for [shadcn/ui](https://ui.shadcn.com) that run their AI model in the browser. You install them with the shadcn CLI, the code lands in your project, and you own it from then on.
 
-- **Local.** The model runs on the GPU of the reader's machine, through WebGPU. No audio and no text leaves the browser, and there is no server to pay for.
+- **Local.** The model runs on the GPU of the reader's machine, through WebGPU. No audio and no text leaves the browser, and there is no server to pay for. Only a page that turns on the browser fallback, as the examples here do, lets the browser's own speech recognition take over where the model cannot run - and the input says so.
 - **Asked first.** A model is large. It downloads only after the reader confirms it, once, and stays in the browser's cache.
 - **Plain inputs.** The components are controlled by `value` and `onChange`, so they work with a state, a form or react-hook-form.
 

@@ -1,5 +1,7 @@
 # One engine: Parakeet on WebGPU
 
+Status: the Web Speech API part is reopened by [ADR-0006](0006-the-browser-fallback-opt-in.md).
+
 Context: a speech input that runs in the browser needs a model that is
 accurate, finds the language by itself and is fast enough to show live text.
 Parakeet TDT 0.6B v3 (NVIDIA, CC-BY-4.0) through parakeet.js on

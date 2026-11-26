@@ -5,7 +5,10 @@ import { useSpeechToText } from "@/hooks/use-speech-to-text"
 
 export default function UseSpeechToTextDemo() {
   const [notes, setNotes] = useState<string[]>([])
-  const speech = useSpeechToText({ onFinal: (text) => setNotes((all) => [...all, text]) })
+  const speech = useSpeechToText({
+    onFinal: (text) => setNotes((all) => [...all, text]),
+    browserFallback: true,
+  })
 
   return (
     <div className="flex flex-col gap-3 text-sm">
@@ -21,6 +24,7 @@ export default function UseSpeechToTextDemo() {
           disabled={
             speech.status !== "ready" &&
             speech.status !== "downloaded" &&
+            speech.status !== "browser-fallback" &&
             speech.status !== "recording"
           }
           onClick={speech.status === "recording" ? speech.stop : speech.start}

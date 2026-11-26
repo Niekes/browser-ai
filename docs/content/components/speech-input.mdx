@@ -54,6 +54,14 @@ The input is controlled by `value` and `onChange`, which receives the new text, 
 
 Every other prop goes to the textarea. While a dictation runs, the textarea is read-only.
 
+Where the model cannot run, the input says so and stays a plain textarea. `browserFallback` lets it dictate there with the browser's own speech recognition, and the input then says the audio may leave the device:
+
+```tsx
+<SpeechInput value={message} onChange={setMessage} browserFallback />
+```
+
+It is off by default, as the browser's recognition is not necessarily local: see [the browser fallback](/docs/how-it-works#the-browser-fallback).
+
 ## API Reference
 
 <auto-type-table path="../../../registry/new-york/ui/speech-input.tsx" name="SpeechInputProps" />
