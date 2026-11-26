@@ -34,8 +34,6 @@ For non-skill agents, treat the task map below as the local onboarding source: r
 
 ## Releasing
 
-## Releasing
-
 A release is a pull request that bumps the version in `package.json` and
 updates `CHANGELOG.md` (for example the `release/0.1.0` branch). Merging it
 into `main` triggers `.github/workflows/release.yml`, which - if the tag is

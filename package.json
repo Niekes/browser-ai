@@ -21,6 +21,7 @@
     "test:watch": "vp test",
     "test:e2e": "playwright test",
     "coverage": "vp test run --coverage",
+    "coverage:badge": "node scripts/coverage-badge.mjs",
     "registry:build": "shadcn build",
     "docs:dev": "react-router dev",
     "docs:build": "react-router build && mv build/client/index.html build/client/404.html && cp -R build/client/browser-ai/. build/client && rm -rf build/client/browser-ai",

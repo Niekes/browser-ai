@@ -68,6 +68,14 @@ runs the real model.
 - Describe what changed and why.
 - Make sure `pnpm verify` passes locally.
 
+## Reporting bugs
+
+Open an issue with the [bug report template](https://github.com/niekes/browser-ai/issues/new/choose),
+and name the browser, the operating system and the GPU. A reproduction is worth
+more than a description: a StackBlitz, a minimal snippet or a failing test case
+is ideal. Bugs in the transcription itself belong to
+[parakeet.js](https://github.com/ysdede/parakeet.js/issues).
+
 ## Documentation
 
 ```bash
@@ -91,3 +99,8 @@ it makes a release commit beside `main` in which every dependency on this
 registry is pinned to `#v<version>`, tags it, creates the GitHub release with
 the version's notes and deploys the docs from the tag. The items can then be
 pinned with `npx shadcn add niekes/browser-ai/<item>#v<version>`.
+
+## Support
+
+browser-ai is free and always will be. If it is useful to you and you want to
+help keep it maintained, [become a sponsor](https://github.com/sponsors/niekes).
