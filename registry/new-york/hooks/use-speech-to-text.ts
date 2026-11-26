@@ -6,6 +6,7 @@ import { useEffect, useId, useLayoutEffect, useRef, useSyncExternalStore } from 
 export type SpeechToTextStatus =
   | "checking"
   | "unsupported"
+  | "browser-fallback"
   | "not-downloaded"
   | "downloaded"
   | "downloading"
@@ -16,7 +17,10 @@ export type SpeechToTextStatus =
   | "finishing"
 
 // The engine of the page, shared by every input that dictates: one worker, one model.
-type EngineStatus = Exclude<SpeechToTextStatus, "busy" | "recording" | "finishing">
+type EngineStatus = Exclude<
+  SpeechToTextStatus,
+  "browser-fallback" | "busy" | "recording" | "finishing"
+>
 
 type Dictation = {
   owner: string
@@ -33,7 +37,31 @@ type Shared = {
 
 type Word = { text: string; start: number; end: number }
 
+// The Web Speech API, as far as the browser fallback uses it; TypeScript's DOM types lack it.
+type Recognition = {
+  lang: string
+  continuous: boolean
+  interimResults: boolean
+  onresult: ((event: { results: ArrayLike<ArrayLike<{ transcript: string }>> }) => void) | null
+  onerror: ((event: { error: string }) => void) | null
+  onend: (() => void) | null
+  start(): void
+  stop(): void
+  abort(): void
+}
+type RecognitionClass = new () => Recognition
+
+// Safari and Chrome name it with their prefix, Firefox has none.
+function browserRecognition() {
+  const browser = globalThis as {
+    SpeechRecognition?: RecognitionClass
+    webkitSpeechRecognition?: RecognitionClass
+  }
+  return browser.SpeechRecognition ?? browser.webkitSpeechRecognition
+}
+
 const RATE = 16000
+const NO_MIC = "The microphone is not available."
 // The live text is transcribed anew about every second.
 const PASS_MS = 1000
 // Past a minute of audio the older text freezes; the last seconds stay live.
@@ -153,7 +181,58 @@ async function begin(owner: string, callback: (text: string) => void) {
     timer = setTimeout(transcribe, PASS_MS)
   } catch {
     end()
-    update({ error: "The microphone is not available." })
+    update({ error: NO_MIC })
+  }
+}
+
+// The browser fallback: the browser's own speech recognition hears the dictation instead.
+let recognition: Recognition | undefined
+// What the browser's errors mean to the reader; "no-speech" and "aborted" end like a stop.
+const RECOGNITION_ERRORS: Record<string, string> = {
+  "not-allowed": NO_MIC,
+  "audio-capture": NO_MIC,
+  "service-not-allowed": "The browser's speech recognition is turned off on this device.",
+}
+
+function failed(error: string) {
+  end()
+  update({
+    error: RECOGNITION_ERRORS[error] ?? `The browser's speech recognition failed (${error}).`,
+  })
+}
+
+function listen(owner: string, callback: (text: string) => void) {
+  const Recognition = browserRecognition()!
+  const current = new Recognition()
+  recognition = current
+  onFinal = callback
+  // The engine finds the language by itself; the browser takes the page's.
+  current.lang = document.documentElement.lang || navigator.language
+  current.continuous = true
+  current.interimResults = true
+  current.onresult = ({ results }) => {
+    if (recognition !== current) return
+    const liveText = join(...Array.from(results, (result) => result[0].transcript.trim()))
+    update({ dictation: { ...shared.dictation!, liveText } })
+  }
+  // After a cancel, recognition is no longer current: the "aborted" that follows is ignored.
+  current.onerror = ({ error }) => {
+    if (recognition !== current || error === "no-speech" || error === "aborted") return
+    failed(error)
+  }
+  // The browser stops after a stop, and by itself after a silence: either way the text is final.
+  current.onend = () => {
+    if (recognition !== current) return
+    recognition = undefined
+    const text = shared.dictation!.liveText
+    end()
+    onFinal(text)
+  }
+  update({ error: undefined, dictation: { owner, phase: "recording", liveText: "" } })
+  try {
+    current.start()
+  } catch (error) {
+    failed((error as Error).name)
   }
 }
 
@@ -161,6 +240,9 @@ function releaseMic() {
   clearTimeout(timer)
   closeMic?.()
   closeMic = undefined
+  const listening = recognition
+  recognition = undefined
+  listening?.abort()
 }
 
 // Ends the dictation: the microphone goes, and every pass still under way is ignored.
@@ -218,8 +300,10 @@ function load() {
   worker?.postMessage({ type: "load" })
 }
 
-function start(owner: string, callback: (text: string) => void) {
+function start(owner: string, callback: (text: string) => void, browserFallback: boolean) {
   if (shared.dictation || pending) return
+  if (statusOf(shared, owner, browserFallback) === "browser-fallback")
+    return listen(owner, callback)
   if (shared.engine === "ready") return begin(owner, callback)
   if (shared.engine !== "downloaded") return
   pending = { owner, onFinal: callback }
@@ -230,9 +314,11 @@ function stop(owner: string) {
   const dictation = shared.dictation
   if (dictation?.owner !== owner || dictation.phase !== "recording") return
   // Nothing was recorded while the browser still asked for the microphone.
-  if (!closeMic) return end()
-  releaseMic()
+  if (!closeMic && !recognition) return end()
   update({ dictation: { ...dictation, phase: "finishing" } })
+  // The browser hands over its last results, then ends.
+  if (recognition) return recognition.stop()
+  releaseMic()
   transcribe()
 }
 
@@ -241,15 +327,23 @@ function cancel(owner: string) {
   if (shared.dictation?.owner === owner) end()
 }
 
-function statusOf(state: Shared, owner: string): SpeechToTextStatus {
+function statusOf(state: Shared, owner: string, browserFallback: boolean): SpeechToTextStatus {
   if (state.dictation?.owner === owner) return state.dictation.phase
   if (state.dictation) return "busy"
+  if (state.engine === "unsupported" && browserFallback && browserRecognition())
+    return "browser-fallback"
   return state.engine
 }
 
 export type UseSpeechToTextOptions = {
   /** Receives the final text of a dictation, once it has been transcribed. */
   onFinal: (text: string) => void
+  /**
+   * Where the engine cannot run, dictates with the browser's own speech recognition instead, if
+   * the browser has one. It need not run on the device: the audio may go to the browser's maker.
+   * @defaultValue false
+   */
+  browserFallback?: boolean
 }
 
 export type UseSpeechToTextResult = {
@@ -272,10 +366,14 @@ export type UseSpeechToTextResult = {
 }
 
 /**
- * Dictation with a speech recognition model that runs in the browser. Every input on the page
- * shares one engine, and only one of them dictates at a time.
+ * Dictation with a speech recognition model that runs in the browser - or, with `browserFallback`
+ * where it cannot run, the browser's own. Every input on the page shares one engine, and only one
+ * of them dictates at a time.
  */
-export function useSpeechToText({ onFinal }: UseSpeechToTextOptions): UseSpeechToTextResult {
+export function useSpeechToText({
+  onFinal,
+  browserFallback = false,
+}: UseSpeechToTextOptions): UseSpeechToTextResult {
   const owner = useId()
   // The final text goes to the callback of the latest render, not of the one that started.
   const final = useRef(onFinal)
@@ -287,12 +385,12 @@ export function useSpeechToText({ onFinal }: UseSpeechToTextOptions): UseSpeechT
   const state = useSyncExternalStore(subscribe, snapshot, snapshot)
 
   return {
-    status: statusOf(state, owner),
+    status: statusOf(state, owner, browserFallback),
     progress: state.progress,
     liveText: state.dictation?.owner === owner ? state.dictation.liveText : "",
     error: state.error,
     download: load,
-    start: () => void start(owner, (text) => final.current(text)),
+    start: () => void start(owner, (text) => final.current(text), browserFallback),
     stop: () => stop(owner),
     cancel: () => cancel(owner),
   }

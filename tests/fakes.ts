@@ -52,3 +52,30 @@ export function stubBrowser() {
     mediaDevices: { getUserMedia: async () => ({ getTracks: () => [track] }) },
   })
 }
+
+// The browser's own speech recognition, as Safari and Chrome name it.
+export class FakeRecognition {
+  static last: FakeRecognition
+  lang = ""
+  continuous = false
+  interimResults = false
+  onresult: ((event: { results: { transcript: string }[][] }) => void) | null = null
+  onerror: ((event: { error: string }) => void) | null = null
+  onend: (() => void) | null = null
+  start = vi.fn()
+  stop = vi.fn()
+  abort = vi.fn()
+  constructor() {
+    FakeRecognition.last = this
+  }
+  // Every result so far, the last one still provisional, as the browser hands them over.
+  hear(...transcripts: string[]) {
+    act(() => this.onresult?.({ results: transcripts.map((transcript) => [{ transcript }]) }))
+  }
+  fail(error: string) {
+    act(() => this.onerror?.({ error }))
+  }
+  end() {
+    act(() => this.onend?.())
+  }
+}

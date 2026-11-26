@@ -2,7 +2,7 @@
 import { act, renderHook } from "@testing-library/react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test"
 
-import { FakeNode, FakeWorker, stubBrowser, track } from "./fakes"
+import { FakeNode, FakeRecognition, FakeWorker, stubBrowser, track } from "./fakes"
 
 let useOther: () => { status: string; start: () => void }
 
@@ -275,5 +275,144 @@ describe("useSpeechToText", () => {
     act(() => result.current.download())
     FakeWorker.last.reply({ type: "error", message: "Network error." })
     expect(result.current).toMatchObject({ status: "not-downloaded", error: "Network error." })
+  })
+})
+
+// A hook that may fall back to the browser's own speech recognition.
+async function fallback(probe = { supported: false, cached: false }, onFinal = vi.fn()) {
+  const { useSpeechToText } = await load()
+  const hook = renderHook(() => useSpeechToText({ onFinal, browserFallback: true }))
+  FakeWorker.last.reply({ type: "probe", ...probe })
+  return { ...hook, onFinal }
+}
+
+describe("useSpeechToText with the browser fallback", () => {
+  beforeEach(() => {
+    vi.stubGlobal("webkitSpeechRecognition", FakeRecognition)
+    document.documentElement.lang = "de"
+  })
+
+  it("uses the browser's speech recognition where the engine cannot run", async () => {
+    const { result } = await fallback()
+    expect(result.current.status).toBe("browser-fallback")
+    act(() => result.current.start())
+    expect(result.current.status).toBe("recording")
+    const recognition = FakeRecognition.last
+    expect(recognition).toMatchObject({ lang: "de", continuous: true, interimResults: true })
+    expect(recognition.start).toHaveBeenCalled()
+    expect(FakeWorker.last.sent.map((m) => m.type)).toEqual(["probe"])
+  })
+
+  it("shows live text and hands over the final text once the browser is done", async () => {
+    const { result, onFinal } = await fallback()
+    act(() => result.current.start())
+    const recognition = FakeRecognition.last
+    recognition.hear("Hello")
+    expect(result.current.liveText).toBe("Hello")
+    recognition.hear("Hello there.", " How are")
+    expect(result.current.liveText).toBe("Hello there. How are")
+
+    act(() => result.current.stop())
+    expect(recognition.stop).toHaveBeenCalled()
+    expect(result.current.status).toBe("finishing")
+    recognition.hear("Hello there.", " How are you?")
+    recognition.end()
+    expect(onFinal).toHaveBeenCalledWith("Hello there. How are you?")
+    expect(result.current).toMatchObject({ status: "browser-fallback", liveText: "" })
+  })
+
+  it.each(["no-speech", "aborted"])(
+    "hands over the text when the browser stops listening by itself (%s)",
+    async (error) => {
+      const { result, onFinal } = await fallback()
+      act(() => result.current.start())
+      FakeRecognition.last.hear("Hello.")
+      FakeRecognition.last.fail(error)
+      FakeRecognition.last.end()
+      expect(onFinal).toHaveBeenCalledWith("Hello.")
+      expect(result.current.error).toBeUndefined()
+    }
+  )
+
+  it("reports a recognition the browser would not start", async () => {
+    const { result } = await fallback()
+    vi.stubGlobal(
+      "webkitSpeechRecognition",
+      class extends FakeRecognition {
+        start = vi.fn(() => {
+          throw new DOMException("Already started.", "InvalidStateError")
+        })
+      }
+    )
+    act(() => result.current.start())
+    expect(result.current).toMatchObject({
+      status: "browser-fallback",
+      error: "The browser's speech recognition failed (InvalidStateError).",
+    })
+  })
+
+  it("drops a cancelled dictation without any text", async () => {
+    const { result, onFinal } = await fallback()
+    act(() => result.current.start())
+    const recognition = FakeRecognition.last
+    recognition.hear("Hello")
+    act(() => result.current.cancel())
+    expect(recognition.abort).toHaveBeenCalled()
+    recognition.hear("Hello there")
+    recognition.end()
+    expect(onFinal).not.toHaveBeenCalled()
+    expect(result.current).toMatchObject({ status: "browser-fallback", liveText: "" })
+  })
+
+  it.each([
+    ["not-allowed", "The microphone is not available."],
+    ["audio-capture", "The microphone is not available."],
+    ["service-not-allowed", "The browser's speech recognition is turned off on this device."],
+    ["network", "The browser's speech recognition failed (network)."],
+  ])("reports %s and drops the dictation", async (error, message) => {
+    const { result, onFinal } = await fallback()
+    act(() => result.current.start())
+    FakeRecognition.last.fail(error)
+    FakeRecognition.last.end()
+    expect(onFinal).not.toHaveBeenCalled()
+    expect(result.current).toMatchObject({ status: "browser-fallback", error: message })
+  })
+
+  it("lets go of the browser's recognition when the dictating input goes away", async () => {
+    const { result, unmount } = await fallback()
+    act(() => result.current.start())
+    unmount()
+    expect(FakeRecognition.last.abort).toHaveBeenCalled()
+  })
+
+  it("takes the unprefixed API and the browser's language", async () => {
+    vi.stubGlobal("webkitSpeechRecognition", undefined)
+    vi.stubGlobal("SpeechRecognition", FakeRecognition)
+    vi.stubGlobal("navigator", { userAgent: "", maxTouchPoints: 0, language: "fr-FR" })
+    document.documentElement.lang = ""
+    const { result } = await fallback()
+    act(() => result.current.start())
+    expect(FakeRecognition.last.lang).toBe("fr-FR")
+  })
+
+  it("keeps the engine wherever it runs", async () => {
+    const { result } = await fallback({ supported: true, cached: false })
+    expect(result.current.status).toBe("not-downloaded")
+  })
+
+  it("says the engine cannot run where the browser has no speech recognition", async () => {
+    vi.stubGlobal("webkitSpeechRecognition", undefined)
+    const { result } = await fallback()
+    expect(result.current.status).toBe("unsupported")
+  })
+
+  it("stays off unless the page turns it on", async () => {
+    const { result } = await ready()
+    const other = renderHook(() => useOther())
+    act(() => result.current.cancel())
+    FakeWorker.last.reply({ type: "probe", supported: false, cached: false })
+    expect(other.result.current.status).toBe("unsupported")
+    act(() => other.result.current.start())
+    expect(other.result.current.status).toBe("unsupported")
   })
 })

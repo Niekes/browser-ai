@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `browserFallback`, an option of `SpeechInput` and `useSpeechToText`, off by
+  default: where the engine cannot run - a phone, a tablet, an iPad, a
+  browser without WebGPU and `shader-f16` - the dictation goes to the
+  browser's own speech recognition (Web Speech API), with the status
+  `browser-fallback` and a note that the audio may leave the device. The
+  examples of the docs turn it on.
+
 ## [0.1.0] - 2026-11-26
 
 ### Added

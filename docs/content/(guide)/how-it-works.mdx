@@ -21,6 +21,14 @@ A click on the microphone starts a dictation, another click stops it, and Escape
 - **Final text.** On stop, a last pass over the whole recording replaces the live text with the final text, and the input's `onChange` receives the text with it at the cursor.
 - **Long dictations.** Past a minute, the words that ended more than ten seconds before the end are frozen, and only the rest of the recording is transcribed again, so a pass stays short.
 
+## The browser fallback
+
+Where the engine cannot run - a phone, a tablet, a browser without WebGPU and 16-bit floats - the input says so and stays a plain textarea. With `browserFallback` turned on, it hands the dictation to the browser's own speech recognition instead, the [Web Speech API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Speech_API), if the browser has one. Wherever the engine runs, the engine is used.
+
+The browser's recognition is not necessarily local: Safari hands the audio to Apple's speech recognition, Chrome sends it to Google's servers, and Firefox has none. So the option is off by default, and while it is in use the input says so: "Dictation uses this browser's speech recognition: the audio may leave this device." There is no model download.
+
+The dictation works as with the engine: live text while you speak, the final text at the cursor when you stop, Escape to cancel. The browser needs a language, which the engine finds by itself: it takes the page's `lang`, else the browser's language. The examples on this site turn the option on.
+
 ## Measured
 
 One transcription on an Apple M5 in Chrome 158, after the first, which compiles the shaders and runs while the model loads:

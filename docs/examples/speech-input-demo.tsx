@@ -11,6 +11,7 @@ export default function SpeechInputDemo() {
       placeholder="Type, or click the microphone and speak."
       value={message}
       onChange={setMessage}
+      browserFallback
     />
   )
 }
