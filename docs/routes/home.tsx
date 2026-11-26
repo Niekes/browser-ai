@@ -80,6 +80,7 @@ export default function Home() {
             <Link
               className="group inline-flex items-center gap-2 rounded-full bg-fd-primary px-5 py-2.5 text-sm font-medium text-fd-primary-foreground shadow-lg transition hover:shadow-xl motion-safe:hover:scale-105"
               to="/docs"
+              viewTransition
             >
               Get started
               <span
@@ -92,6 +93,7 @@ export default function Home() {
             <Link
               className="inline-flex items-center rounded-full border border-fd-foreground/15 px-5 py-2.5 text-sm font-medium transition hover:bg-fd-accent"
               to="/docs/components"
+              viewTransition
             >
               Browse components
             </Link>

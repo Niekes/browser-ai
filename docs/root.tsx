@@ -1,5 +1,14 @@
 import { RootProvider } from "fumadocs-ui/provider/react-router"
-import { isRouteErrorResponse, Links, Meta, Outlet, Scripts, ScrollRestoration } from "react-router"
+import type { Framework } from "fumadocs-core/framework"
+import {
+  isRouteErrorResponse,
+  Link,
+  Links,
+  Meta,
+  Outlet,
+  Scripts,
+  ScrollRestoration,
+} from "react-router"
 
 import NotFound from "./routes/not-found"
 import type { Route } from "./+types/root"
@@ -12,6 +21,11 @@ export const links: Route.LinksFunction = () => [
   { rel: "icon", type: "image/svg+xml", href: `${import.meta.env.BASE_URL}favicon.svg` },
 ]
 
+// Fumadocs' own Link, with a view transition between the pages of the docs.
+const TransitionLink: Framework["Link"] = ({ href, prefetch, ...props }) => (
+  <Link to={href ?? ""} prefetch={prefetch ? "intent" : "none"} viewTransition {...props} />
+)
+
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
@@ -22,7 +36,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <Links />
       </head>
       <body className="flex min-h-screen flex-col">
-        <RootProvider search={{ options: { type: "static", api: "/browser-ai/api/search" } }}>
+        <RootProvider
+          components={{ Link: TransitionLink }}
+          search={{ options: { type: "static", api: "/browser-ai/api/search" } }}
+        >
           {children}
         </RootProvider>
         <ScrollRestoration />
