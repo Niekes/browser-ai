@@ -99,3 +99,12 @@
   --color-secondary-foreground: var(--secondary-foreground);
   --color-destructive: var(--destructive);
 }
+
+/* Pages of the docs crossfade (the Link in root.tsx), unless the reader asks for less motion. */
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none;
+  }
+}
