@@ -32,7 +32,7 @@
         "progress",
         "textarea",
         "utils",
-        "niekes/browser-ai/use-speech-to-text"
+        "niekes/browser-ai/use-speech-to-text#v0.2.0"
       ],
       "files": [
         {

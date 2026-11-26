@@ -22,7 +22,7 @@ export function meta() {
   ]
 }
 
-const add = "shadcn@latest add niekes/browser-ai/speech-input"
+const add = "shadcn@latest add niekes/browser-ai/speech-input#v0.2.0"
 const commands = {
   npm: `npx ${add}`,
   pnpm: `pnpm dlx ${add}`,
