@@ -1,6 +1,6 @@
 {
   "name": "browser-ai",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
   "description": "Local AI components for shadcn/ui: models that run in the browser. A shadcn registry.",
   "homepage": "https://niekes.github.io/browser-ai/",
