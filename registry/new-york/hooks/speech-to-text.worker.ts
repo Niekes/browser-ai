@@ -27,7 +27,9 @@ async function supported(mobile: boolean) {
 }
 
 // Whether parakeet.js holds every file in its IndexedDB cache already.
-// shortcut: reads the private cache layout of parakeet.js 1.4.4; check it again on an upgrade.
+// shortcut: reads the private cache layout of parakeet.js 1.4.4 and only checks that a blob
+// is there per file, as 1.4.4 uses any cached blob; a parakeet.js that validates its cache and
+// downloads again could load ~1.3 GB unconfirmed (ADR-0003): match its check before upgrading.
 function cached() {
   return new Promise<boolean>((resolve) => {
     const request = indexedDB.open("parakeet-cache-db", 1)
